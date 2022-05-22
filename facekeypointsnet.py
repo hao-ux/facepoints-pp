@@ -7,6 +7,7 @@ from net.backbone import FaceKeyPointsNetBody
 import paddle.vision.transforms as T
 import pandas as pd
 from utils.utils import decode_show
+import time
 
 class FaceKeyPointsNet(object):
     _defaults = {
@@ -27,7 +28,7 @@ class FaceKeyPointsNet(object):
         self.__dict__.update(self._defaults)
         for name, value in kwargs.items():
             setattr(self, name, value)
-        self.df = pd.read_csv('./datasets/training_frames_keypoints.csv')
+        self.df = pd.read_csv('C:\\Users\\豪豪\\Envs\\tensorflow\\cv\\人脸关键点检测\\facekeypoints-tf2\\datasets\\training_frames_keypoints.csv')
         key_pts_values = self.df.values[:,1:]
         self.data_mean = key_pts_values.mean() # 计算均值
         self.data_std = key_pts_values.std()   # 计算标准差
@@ -58,6 +59,24 @@ class FaceKeyPointsNet(object):
         img, kpt = self.to_chw([img, kpt])
         img = np.array([img], dtype='float32')
         out = self.model.predict_batch([img])
+        print(np.array(out).shape)
         out = out[0].reshape((out[0].shape[0], 136, -1))
+        print(np.array(out).shape)
         decode_show(rgb_img, out, self.data_mean, self.data_std)
+        
+    def fps(self, img, n=100):
+        start = time.time()
+        img = np.array(img)
+        if img.shape[2] == 4:
+            img =img[:,:,:3]
+        kpt = np.ones((136, 1))
+        rgb_img, kpt = self.transforms([img, kpt])
+        img, kpt = self.norm([rgb_img, kpt])
+        img, kpt = self.to_chw([img, kpt])
+        img = np.array([img], dtype='float32')
+        for _ in range(n):
+            out =self.model.predict_batch([img])
+        end = time.time()
+        avg_time = (end - start)/n
+        return avg_time
         
